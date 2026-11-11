@@ -16,7 +16,7 @@
 <style>
 :root{
   --bg:#0d1117;--surface:#161b22;--surface2:#1c232c;--line:#30363d;--line2:#3d444d;
-  --ink:#f0f6fc;--muted:#9198a1;--gold:#C9B48A;--gold2:#8C7748;--faint:#6e7681;
+  --ink:#f0f6fc;--muted:#b1bac4;--gold:#C9B48A;--gold2:#8C7748;--faint:#6e7681;
   --ease:cubic-bezier(.23,1,.32,1);
 }
 *{box-sizing:border-box}
@@ -82,7 +82,7 @@ nav a:hover{color:var(--ink)}
 .stat .lift{padding:24px 22px;display:flex;flex-direction:column;gap:8px}
 .stat b{font-size:clamp(42px,5.4vw,60px);letter-spacing:-.05em;line-height:1}
 .stat.g b{color:var(--gold);animation:breathe 4s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes breathe{0%,100%{opacity:.82}50%{opacity:1}}
 .stat span{font-size:15px;color:var(--muted)}
 
 .work-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
@@ -328,7 +328,7 @@ const PROJECTS = [
   {id:"atlas",name:"Atlas",tag:"fin"},{id:"quant",name:"Quant research",tag:"fin"},
   {id:"fairs",name:"Trade-fair prospecting",tag:"auto"},{id:"leeme",name:"LeeMe",tag:"apps"}
 ];
-const COLORS = ["#C9B48A","#8C7748","#6e7681","#9198a1","#3d444d","#30363d"];
+const COLORS = ["#C9B48A","#8C7748","#6e7681","#9198a1","#545d68","#424a53"];
 let LANGS = {repos:9, langs:[["Python",77.5],["JavaScript",12.5],["HTML",4.2],["TypeScript",3.5],["CSS",2.1]]};
 
 const $ = id => document.getElementById(id);
@@ -384,7 +384,7 @@ function paintStack(anim){
   $("donut").setAttribute("aria-label", L.map(([n,p]) => `${n} ${p}%`).join(", "));
   $("donut").innerHTML = `<circle cx="160" cy="160" r="120" fill="none" stroke="#161b22" stroke-width="24"/><g transform="rotate(-90 160 160)">${segs}</g><g class="orb"><circle cx="160" cy="16" r="3.5" fill="#C9B48A"/></g>`;
   const [name, pct] = L[langSel];
-  setHTML($("centre"), `<div style="display:flex;flex-direction:column;align-items:center"><b style="color:${langSel<2?COLORS[langSel]:"#f0f6fc"}">${pct}%</b><span>${esc(name)}</span></div>`, anim);
+  setHTML($("centre"), `<div style="display:flex;flex-direction:column;align-items:center"><b style="color:${langSel===0?COLORS[0]:"#f0f6fc"}">${pct}%</b><span>${esc(name)}</span></div>`, anim);
   $("legend").innerHTML = L.map(([n,p],i) => `<button type="button" class="lang live${i===langSel?" on":""}" data-k="${i}" aria-pressed="${i===langSel}"><span class="lift"><i style="background:${COLORS[i]}"></i><b>${esc(n)}</b><span>${p}%</span></span></button>`).join("");
   setHTML($("use"), `<div><small>${esc(t().useFor)}</small><p>${esc(t().uses[name] || t().uses.Other)}</p></div>`, anim);
   bindLive($("legend"));
@@ -394,7 +394,7 @@ function pickLang(i){
   $("donut").querySelectorAll(".seg").forEach(c => { const on = +c.dataset.k === i; c.style.strokeWidth = on ? 38 : 24; c.style.opacity = on ? 1 : .5; });
   $("legend").querySelectorAll(".lang").forEach(b => { const on = +b.dataset.k === i; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on); });
   const [name, pct] = LANGS.langs[i];
-  setHTML($("centre"), `<div style="display:flex;flex-direction:column;align-items:center"><b style="color:${i<2?COLORS[i]:"#f0f6fc"}">${pct}%</b><span>${esc(name)}</span></div>`, true);
+  setHTML($("centre"), `<div style="display:flex;flex-direction:column;align-items:center"><b style="color:${i===0?COLORS[0]:"#f0f6fc"}">${pct}%</b><span>${esc(name)}</span></div>`, true);
   setHTML($("use"), `<div><small>${esc(t().useFor)}</small><p>${esc(t().uses[name] || t().uses.Other)}</p></div>`, true);
 }
 
@@ -433,11 +433,19 @@ $("list").addEventListener("click", e => {
   paintPanel(true);
 });
 $("legend").addEventListener("click", e => { const b = e.target.closest(".lang"); if (b) pickLang(+b.dataset.k); });
-$("legend").addEventListener("pointerover", e => { const b = e.target.closest(".lang"); if (b && e.pointerType === "mouse") pickLang(+b.dataset.k); });
-$("donut").addEventListener("pointerover", e => { const s = e.target.closest(".seg"); if (s) pickLang(+s.dataset.k); });
+let intent;
+const hoverIntent = fn => { clearTimeout(intent); intent = setTimeout(fn, 140); };
+$("legend").addEventListener("pointerover", e => { const b = e.target.closest(".lang"); if (b && e.pointerType === "mouse") hoverIntent(() => pickLang(+b.dataset.k)); });
+$("legend").addEventListener("pointerleave", () => clearTimeout(intent));
+$("donut").addEventListener("pointerover", e => { const s = e.target.closest(".seg"); if (s) hoverIntent(() => pickLang(+s.dataset.k)); });
 $("donut").addEventListener("click", e => { const s = e.target.closest(".seg"); if (s) pickLang(+s.dataset.k); });
-$("steps").addEventListener("click", e => { const b = e.target.closest(".step"); if (b) pickStep(+b.dataset.s); });
-$("steps").addEventListener("pointerover", e => { const b = e.target.closest(".step"); if (b && e.pointerType === "mouse") pickStep(+b.dataset.s); });
+let stepsPausedUntil = 0, stepsVisible = false;
+const userStep = i => { stepsPausedUntil = Date.now() + 8000; pickStep(i); };
+$("steps").addEventListener("click", e => { const b = e.target.closest(".step"); if (b) { clearTimeout(intent); userStep(+b.dataset.s); } });
+$("steps").addEventListener("pointerover", e => { const b = e.target.closest(".step"); if (b && e.pointerType === "mouse") { stepsPausedUntil = Date.now() + 8000; hoverIntent(() => userStep(+b.dataset.s)); } });
+$("steps").addEventListener("pointerleave", () => clearTimeout(intent));
+new IntersectionObserver(es => { stepsVisible = es[0].isIntersecting; }, {threshold:.4}).observe($("build"));
+if (!reduced) setInterval(() => { if (stepsVisible && Date.now() > stepsPausedUntil && !document.hidden) pickStep((step + 1) % t().steps.length); }, 3200);
 bindLive(document);
 
 const io = new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } }), {threshold:.12});
