@@ -16,7 +16,7 @@
 <style>
 :root{
   --bg:#0d1117;--surface:#161b22;--surface2:#1c232c;--line:#30363d;--line2:#3d444d;
-  --ink:#f0f6fc;--muted:#b1bac4;--gold:#C9B48A;--gold2:#8C7748;--faint:#6e7681;
+  --ink:#f0f6fc;--muted:#c0c7cf;--gold:#C9B48A;--gold2:#8C7748;--faint:#6e7681;
   --ease:cubic-bezier(.23,1,.32,1);
 }
 *{box-sizing:border-box}
@@ -333,6 +333,9 @@ let LANGS = {repos:9, langs:[["Python",77.5],["JavaScript",12.5],["HTML",4.2],["
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fit = () => { const z = Math.min(1.6, Math.max(1, innerWidth / 1240)); document.documentElement.style.zoom = z; return z; };
+let zoom = fit();
+addEventListener("resize", () => { zoom = fit(); });
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 if (reduced) document.querySelectorAll(".vein animate").forEach(x => x.remove());
 const param = new URLSearchParams(location.search).get("lang");
@@ -414,7 +417,7 @@ function pickStep(i){
 function bindLive(root){
   root.querySelectorAll(".live").forEach(el => {
     if (el.dataset.bound) return; el.dataset.bound = 1;
-    el.addEventListener("pointermove", e => { const r = el.getBoundingClientRect(); el.style.setProperty("--mx", `${e.clientX - r.left}px`); el.style.setProperty("--my", `${e.clientY - r.top}px`); });
+    el.addEventListener("pointermove", e => { const r = el.getBoundingClientRect(); el.style.setProperty("--mx", `${(e.clientX - r.left) / zoom}px`); el.style.setProperty("--my", `${(e.clientY - r.top) / zoom}px`); });
   });
 }
 
